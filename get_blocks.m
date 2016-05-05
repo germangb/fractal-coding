@@ -1,4 +1,4 @@
-function [ blocks ] = get_blocks( img, B, adv )
+function [ blocks, mean_dyn ] = get_blocks( img, B, adv )
 
     [w, h] = size(img);
     
@@ -6,6 +6,7 @@ function [ blocks ] = get_blocks( img, B, adv )
     y_steps = floor((h - B) / adv) + 1;
 
     blocks = [];
+    mean_dyn = [Inf, -Inf];
     
     for x=1:x_steps
         for y=1:y_steps
@@ -15,7 +16,11 @@ function [ blocks ] = get_blocks( img, B, adv )
             %figure;
             %imshow(block);
             
-            blocks = [blocks, struct('block', block, 'mean', sum(block(:))/(B*B))];
+            mean = sum(block(:))/(B*B);
+            blocks = [blocks, struct('block', block, 'mean', mean)];
+            
+            mean_dyn(1) = min(mean_dyn(1), mean);
+            mean_dyn(2) = max(mean_dyn(2), mean);
         end
     end
 end

@@ -11,13 +11,13 @@ imshow(join_blocks(Rr, 256, 256));
 
 clear all;
 
-B = 8;
+B = 4;
 V = 4;
 
-I = double(load_raw('images/lena.lum', 256, 256))/255;
+I = double(load_raw('images/me.lum', 256, 256))/255;
 
 % get range blocks
-R = get_blocks(I, B, B);
+[R, Rmeans] = get_blocks(I, B, B);
 
 % get domain blocks
 Idec = imresize(I, 0.5);
@@ -27,14 +27,30 @@ CODED = [];
 for i=1:length(R)
     fprintf('matching block %d/%d\n', i, length(R));
     [s, index, trans] = find_best(R(i), D);
-    CODED = [CODED, struct('s', s, 'r', R(i).mean, 'index', index, 'trans', trans)];
+    CODED = [CODED, struct('s', s, 's_q', s, 'r', R(i).mean, 'r_q', R(i).mean, 'index', index, 'trans', trans)];
+end
+
+%% QUANTIZE
+
+b_total = 8;
+b_s = 4;
+b_r = b_total - b_s;
+
+s_levels = 2^6;
+s_q_step = 1/s_levels;
+
+for i=1:length(CODED)
+    s = CODED(i).s;
+    r = CODED(i).r;
+    CODED(i).s_q = q_step * (1+floor(s/s_q_step - s_q_step*1e-16));
 end
 
 % RECONSTRUCTION
 
-F = 8;
+F = 1;
 S = 256*F;
-H = rand(S, S);
+H = double(load_raw('images/camman.lum', 256, 256))/255;
+H = imresize(H, F);
 IT = 8;
 
 ITS = [struct('img', H)];
@@ -48,7 +64,7 @@ for iter=1:IT
     for i=1:length(CODED)
         block = Ddec(CODED(i).index);
         block.block = apply_trans(block.block, CODED(i).trans);
-        Hnext(i).block = CODED(i).s * (block.block - block.mean) + CODED(i).r;
+        Hnext(i).block = CODED(i).s_q * (block.block - block.mean) + CODED(i).r;
     end
     
     H = join_blocks(Hnext, S, S);
@@ -56,17 +72,18 @@ for iter=1:IT
 end
 
 DEC = ITS(end).img;
-imshow(DEC);
+%imshow(DEC);
 
-%% PLOT
+% PLOT
 
 for i=1:length(ITS)-1
+    %break;
     imshow(ITS(i).img); title(sprintf('Iteration #%d', i-1));
     waitforbuttonpress
 end
 
-%imshow(ITS(end).img);
-%compute_psnr(ITS(end).img, I)
+psnr = compute_psnr(ITS(end).img, I);
+imshow(ITS(end).img); title(sprintf('PSNR = %.02fdB', psnr));
 
-subplot(1, 2, 1); imshow(I);
-subplot(1, 2, 2); imshow(ITS(i).img); title(sprintf('Iteration #%d', length(ITS)-1));
+%subplot(1, 2, 1); imshow(I);
+%subplot(1, 2, 2); imshow(ITS(i).img); title(sprintf('Iteration #%d', length(ITS)-1));
