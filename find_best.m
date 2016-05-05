@@ -1,9 +1,7 @@
-function [ s, g, index, transform ] = find_best( block, domain )
-    
+function [ s, index, transform ] = find_best( block, domain )
     % set up for optimal block matching
     min_dist = 99999999;
     s = 1;
-    g = 0;
     index = 1;
     transform = 0;
         
@@ -30,15 +28,6 @@ function [ s, g, index, transform ] = find_best( block, domain )
             test_s = min(test_s, 1);
             test_s = max(test_s, 0);
             
-            % this is too general. We can assume optimal
-            % parameters (no need for test_g)
-            
-            % compute transformed domain and compare
-            %test_g = r_mean - test_s*d_mean;
-            %trans = test_s .* dom.block + test_g;
-            %diff = (trans - block.block).^2;
-            %test_dist = sum(diff(:));
-
             var_r_v = block.block - block.mean;
             var_r_v = var_r_v(:);
             var_r = var_r_v' * var_r_v;
@@ -51,7 +40,6 @@ function [ s, g, index, transform ] = find_best( block, domain )
             
             if test_dist < min_dist
                 s = test_s;
-                g = test_g;
                 min_dist = test_dist;
                 index = i;
                 transform = tr;

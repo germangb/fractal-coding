@@ -26,8 +26,8 @@ CODED = [];
 
 for i=1:length(R)
     fprintf('matching block %d/%d\n', i, length(R));
-    [s, g, index, trans] = find_best(R(i), D);
-    CODED = [CODED, struct('s', s, 'g', g, 'r', R(i).mean, 'index', index, 'trans', trans)];
+    [s, index, trans] = find_best(R(i), D);
+    CODED = [CODED, struct('s', s, 'r', R(i).mean, 'index', index, 'trans', trans)];
 end
 
 % RECONSTRUCTION
@@ -48,7 +48,6 @@ for iter=1:IT
     for i=1:length(CODED)
         block = Ddec(CODED(i).index);
         block.block = apply_trans(block.block, CODED(i).trans);
-        %Hnext(i).block = block.block * CODED(i).s + CODED(i).g;
         Hnext(i).block = CODED(i).s * (block.block - block.mean) + CODED(i).r;
     end
     
