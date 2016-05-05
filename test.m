@@ -15,7 +15,6 @@ B = 8;
 V = 4;
 
 I = double(load_raw('images/lena.lum', 256, 256))/255;
-I = double(rgb2gray(imread('images/checker.png')))/255;
 
 % get range blocks
 R = get_blocks(I, B, B);
@@ -28,7 +27,7 @@ CODED = [];
 for i=1:length(R)
     fprintf('matching block %d/%d\n', i, length(R));
     [s, g, index, trans] = find_best(R(i), D);
-    CODED = [CODED, struct('s', s, 'g', g, 'index', index, 'trans', trans)];
+    CODED = [CODED, struct('s', s, 'g', g, 'r', R(i).mean, 'index', index, 'trans', trans)];
 end
 
 %% RECONSTRUCTION
@@ -49,13 +48,16 @@ for iter=1:IT
     for i=1:length(CODED)
         block = Ddec(CODED(i).index);
         block.block = apply_trans(block.block, CODED(i).trans);
-        Hnext(i).block = block.block * CODED(i).s + CODED(i).g;
+        %Hnext(i).block = block.block * CODED(i).s + CODED(i).g;
+        Hnext(i).block = CODED(i).s * (block.block - block.mean) + CODED(i).r;
     end
     
     H = join_blocks(Hnext, S, S);
     ITS = [ITS, struct('img', H)];
 end
+
 DEC = ITS(end).img;
+imshow(DEC);
 
 %% PLOT
 
