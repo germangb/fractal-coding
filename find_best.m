@@ -30,13 +30,25 @@ function [ s, g, index, transform ] = find_best( block, domain )
             test_s = min(test_s, 1);
             test_s = max(test_s, 0);
             
-            test_g = r_mean - test_s*d_mean;
-
+            % this is too general. We can assume optimal
+            % parameters (no need for test_g)
+            
             % compute transformed domain and compare
-            trans = test_s .* dom.block + test_g;
-            diff = (trans - block.block).^2;
-            test_dist = sum(diff(:));
+            %test_g = r_mean - test_s*d_mean;
+            %trans = test_s .* dom.block + test_g;
+            %diff = (trans - block.block).^2;
+            %test_dist = sum(diff(:));
 
+            var_r_v = block.block - block.mean;
+            var_r_v = var_r_v(:);
+            var_r = var_r_v' * var_r_v;
+            
+            var_d_v = dom.block - dom.mean;
+            var_d_v = var_d_v(:);
+            var_d = var_d_v' * var_d_v;
+            
+            test_dist = var_r - test_s*test_s*var_d;
+            
             if test_dist < min_dist
                 s = test_s;
                 g = test_g;

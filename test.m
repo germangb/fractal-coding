@@ -30,9 +30,9 @@ for i=1:length(R)
     CODED = [CODED, struct('s', s, 'g', g, 'r', R(i).mean, 'index', index, 'trans', trans)];
 end
 
-%% RECONSTRUCTION
+% RECONSTRUCTION
 
-F = 4;
+F = 8;
 S = 256*F;
 H = rand(S, S);
 IT = 8;
