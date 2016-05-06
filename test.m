@@ -11,10 +11,10 @@ imshow(join_blocks(Rr, 256, 256));
 
 clear all;
 
-B = 4;
-V = 4;
+B = 8;
+V = 8;
 
-I = double(load_raw('images/lena.lum', 256, 256))/255;
+I = double(load_raw('images/people.lum', 256, 256))/255;
 
 % get range blocks
 [R, Rmeans] = get_blocks(I, B, B);
@@ -40,10 +40,12 @@ V_MEAN = V_MEAN / length(D);
 %% QUANTIZE
 
 % determine bits for each parameter
-b_total = 4;
 dr = Rmeans(2) - Rmeans(1);
-b_r = floor((b_total + log2(dr/sqrt(V_MEAN)))/2)
-b_s = b_total - b_r
+
+b_total = 8;
+b_r = floor((b_total + log2(dr/sqrt(V_MEAN)))/2);
+b_s = b_total - b_r;
+bits = [b_r, b_s]
 
 s_levels = 2^b_s;
 s_q_step = 1/s_levels;
@@ -62,33 +64,32 @@ end
 % RECONSTRUCTION
 
 F = 1;
-S = 256*F;
 H = double(load_raw('images/camman.lum', 256, 256))/255;
 H = imresize(H, F);
 IT = 8;
 
 ITS = [struct('img', H)];
 for iter=1:IT
-    fprintf('Iteration #%d\n', iter);
+    %fprintf('Iteration #%d\n', iter);
     Hdec = imresize(H, 0.5);
     Ddec = get_blocks(Hdec, B*F, V*F);
     Hblock = get_blocks(H, B*F, B*F);
     Hnext = get_blocks(H, B*F, B*F);
-    
+
     for i=1:length(CODED)
         block = Ddec(CODED(i).index);
         block.block = apply_trans(block.block, CODED(i).trans);
         Hnext(i).block = CODED(i).s_q * (block.block - block.mean) + CODED(i).r_q;
     end
-    
-    H = join_blocks(Hnext, S, S);
+
+    H = join_blocks(Hnext, 256, 256);
     ITS = [ITS, struct('img', H)];
 end
 
 DEC = ITS(end).img;
-%imshow(DEC);
+psnr = compute_psnr(DEC, I)
 
-% PLOT
+%% PLOT
 
 for i=1:length(ITS)-1
     %break;
@@ -96,7 +97,6 @@ for i=1:length(ITS)-1
     waitforbuttonpress
 end
 
-psnr = compute_psnr(ITS(end).img, I);
 imshow(ITS(end).img); title(sprintf('PSNR = %.02fdB', psnr));
 
 %subplot(1, 2, 1); imshow(I);
