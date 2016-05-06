@@ -17,7 +17,12 @@ function [ blocks, mean_dyn ] = get_blocks( img, B, adv )
             %imshow(block);
             
             mean = sum(block(:))/(B*B);
-            blocks = [blocks, struct('block', block, 'mean', mean)];
+
+            % compute variance
+            tmp = block(:) - mean;
+            var = (tmp' * tmp) / (B*B);
+            
+            blocks = [blocks, struct('block', block, 'mean', mean, 'var', var)];
             
             mean_dyn(1) = min(mean_dyn(1), mean);
             mean_dyn(2) = max(mean_dyn(2), mean);

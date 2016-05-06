@@ -14,7 +14,7 @@ clear all;
 B = 4;
 V = 4;
 
-I = double(load_raw('images/me.lum', 256, 256))/255;
+I = double(load_raw('images/lena.lum', 256, 256))/255;
 
 % get range blocks
 [R, Rmeans] = get_blocks(I, B, B);
@@ -30,19 +30,33 @@ for i=1:length(R)
     CODED = [CODED, struct('s', s, 's_q', s, 'r', R(i).mean, 'r_q', R(i).mean, 'index', index, 'trans', trans)];
 end
 
+%% GRAB MEAN VARIANCE
+V_MEAN = 0.0;
+for i=1:length(D)
+    V_MEAN = V_MEAN + D(i).var;
+end
+V_MEAN = V_MEAN / length(D);
+
 %% QUANTIZE
 
-b_total = 8;
-b_s = 4;
-b_r = b_total - b_s;
+% determine bits for each parameter
+b_total = 4;
+dr = Rmeans(2) - Rmeans(1);
+b_r = floor((b_total + log2(dr/sqrt(V_MEAN)))/2)
+b_s = b_total - b_r
 
-s_levels = 2^6;
+s_levels = 2^b_s;
 s_q_step = 1/s_levels;
+
+r_levels = 2^b_r;
+r_q_step = 1/r_levels;
 
 for i=1:length(CODED)
     s = CODED(i).s;
     r = CODED(i).r;
-    CODED(i).s_q = q_step * (1+floor(s/s_q_step - s_q_step*1e-16));
+    CODED(i).s_q = s_q_step * (1+floor(s/s_q_step - s_q_step*1e-16));
+    CODED(i).r_q = r_q_step/2 + r_q_step*floor((r - Rmeans(1))/dr/r_q_step - 0.00001);
+    CODED(i).r_q = (1-CODED(i).r_q) * Rmeans(1) + CODED(i).r_q * Rmeans(2);
 end
 
 % RECONSTRUCTION
@@ -64,7 +78,7 @@ for iter=1:IT
     for i=1:length(CODED)
         block = Ddec(CODED(i).index);
         block.block = apply_trans(block.block, CODED(i).trans);
-        Hnext(i).block = CODED(i).s_q * (block.block - block.mean) + CODED(i).r;
+        Hnext(i).block = CODED(i).s_q * (block.block - block.mean) + CODED(i).r_q;
     end
     
     H = join_blocks(Hnext, S, S);
