@@ -1,3 +1,7 @@
+%%
+I = double(load_raw('images/mandril.lum', 128, 128))/255;
+H = rand(128*8, 128*8);
+
 %% REPLACE RANGE WITH BEST MATCHING DOMAIN
 
 Rr = R;
@@ -5,16 +9,12 @@ for i=1:length(R)
     Rr(i) = D(CODED(i).index);
 end
 
-imshow(join_blocks(Rr, 256, 256));
+imshow(join_blocks(Rr, 128, 128));
 
 %% FIND TRANSFORMATIONS
 
-clear all;
-
-B = 8;
-V = 8;
-
-I = double(load_raw('images/mandril.lum', 128, 128))/255;
+B = 4;
+V = 4;
 
 % get range blocks
 [R, Rmeans] = get_blocks(I, B, B);
@@ -30,65 +30,33 @@ for i=1:length(R)
     CODED = [CODED, struct('s', s, 's_q', s, 'r', R(i).mean, 'r_q', R(i).mean, 'index', index, 'trans', trans)];
 end
 
-%% GRAB MEAN VARIANCE
-V_MEAN = 0.0;
-for i=1:length(D)
-    V_MEAN = V_MEAN + D(i).var;
-end
-V_MEAN = V_MEAN / length(D);
+%% RECONSTRUCTION
 
-%% QUANTIZE
-
-% determine bits for each parameter
-dr = Rmeans(2) - Rmeans(1);
-
-b_total = 8;
-b_r = floor((b_total + log2(dr/sqrt(V_MEAN)))/2);
-b_s = b_total - b_r;
-bits = [b_r, b_s]
-
-s_levels = 2^b_s;
-s_q_step = 1/s_levels;
-
-r_levels = 2^b_r;
-r_q_step = 1/r_levels;
-
-for i=1:length(CODED)
-    s = CODED(i).s;
-    r = CODED(i).r;
-    CODED(i).s_q = s_q_step * (1+floor(s/s_q_step - s_q_step*1e-16));
-    CODED(i).r_q = r_q_step/2 + r_q_step*floor((r - Rmeans(1))/dr/r_q_step - 0.00001);
-    CODED(i).r_q = (1-CODED(i).r_q) * Rmeans(1) + CODED(i).r_q * Rmeans(2);
-end
-
-% RECONSTRUCTION
-
-F = 1;
-%H = double(load_raw('images/camman.lum', 256, 256))/255;
-H = rand(128, 128);
-H = imresize(H, F);
+F = 8;
 IT = 8;
-
-ITS = [struct('img', H)];
+Hr = rand(128*8, 128*8);
+ITS = [struct('img', Hr)];
 for iter=1:IT
-    %fprintf('Iteration #%d\n', iter);
-    Hdec = imresize(H, 0.5);
+    fprintf('Iteration #%d\n', iter);
+    Hdec = imresize(Hr, 0.5);
     Ddec = get_blocks(Hdec, B*F, V*F);
-    Hblock = get_blocks(H, B*F, B*F);
-    Hnext = get_blocks(H, B*F, B*F);
+    Hblock = get_blocks(Hr, B*F, B*F);
+    Hnext = get_blocks(Hr, B*F, B*F);
 
     for i=1:length(CODED)
         block = Ddec(CODED(i).index);
         block.block = apply_trans(block.block, CODED(i).trans);
-        Hnext(i).block = CODED(i).s_q * (block.block - block.mean) + CODED(i).r_q;
+        Hnext(i).block = CODED(i).s * (block.block - block.mean) + CODED(i).r;
     end
 
-    H = join_blocks(Hnext, 128, 128);
-    ITS = [ITS, struct('img', H)];
+    Hr = join_blocks(Hnext, 128*F, 128*F);
+    ITS = [ITS, struct('img', Hr)];
 end
 
 DEC = ITS(end).img;
-psnr = compute_psnr(DEC, I)
+figure;
+subplot(1,2,1); imshow(I);
+subplot(1,2,2); imshow(DEC);
 
 %% PLOT
 

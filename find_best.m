@@ -8,7 +8,7 @@ function [ s, index, transform ] = find_best( block, domain )
     for i=1:length(domain)
         
         % use more affine transforms
-        for tr=0:0
+        for tr=0:3
             % domain block being tested
             dom = domain(i);
             dom.block = apply_trans(dom.block, tr);
