@@ -14,7 +14,7 @@ clear all;
 B = 8;
 V = 8;
 
-I = double(load_raw('images/people.lum', 256, 256))/255;
+I = double(load_raw('images/mandril.lum', 128, 128))/255;
 
 % get range blocks
 [R, Rmeans] = get_blocks(I, B, B);
@@ -64,7 +64,8 @@ end
 % RECONSTRUCTION
 
 F = 1;
-H = double(load_raw('images/camman.lum', 256, 256))/255;
+%H = double(load_raw('images/camman.lum', 256, 256))/255;
+H = rand(128, 128);
 H = imresize(H, F);
 IT = 8;
 
@@ -82,7 +83,7 @@ for iter=1:IT
         Hnext(i).block = CODED(i).s_q * (block.block - block.mean) + CODED(i).r_q;
     end
 
-    H = join_blocks(Hnext, 256, 256);
+    H = join_blocks(Hnext, 128, 128);
     ITS = [ITS, struct('img', H)];
 end
 
