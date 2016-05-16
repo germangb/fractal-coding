@@ -11,10 +11,11 @@ imshow(join_blocks(Rr, 256, 256));
 
 clear all;
 
-B = 8;
-V = 8;
+B = 4;
+V = 4;
 
-I = double(load_raw('images/mandril.lum', 128, 128))/255;
+Iraw = load_raw('images/lena.lum', 256, 256);
+I = double(Iraw)/255;
 
 % get range blocks
 [R, Rmeans] = get_blocks(I, B, B);
@@ -44,6 +45,9 @@ dr = Rmeans(2) - Rmeans(1);
 
 b_total = 8;
 b_r = floor((b_total + log2(dr/sqrt(V_MEAN)))/2);
+
+b_r = 1;
+
 b_s = b_total - b_r;
 bits = [b_r, b_s]
 
@@ -65,7 +69,7 @@ end
 
 F = 1;
 %H = double(load_raw('images/camman.lum', 256, 256))/255;
-H = rand(128, 128);
+H = rand(256, 256);
 H = imresize(H, F);
 IT = 8;
 
@@ -83,12 +87,14 @@ for iter=1:IT
         Hnext(i).block = CODED(i).s_q * (block.block - block.mean) + CODED(i).r_q;
     end
 
-    H = join_blocks(Hnext, 128, 128);
+    H = join_blocks(Hnext, 256, 256);
     ITS = [ITS, struct('img', H)];
 end
 
 DEC = ITS(end).img;
-psnr = compute_psnr(DEC, I)
+imwrite(DEC, 'tmp.png');
+tmp = imread('tmp.png');
+psnr = compute_psnr(tmp, Iraw)
 
 %% PLOT
 
