@@ -1,0 +1,3 @@
+encoded using 4x4 tange blocks
+4x4 non-overlapping domain bloks
+no isometries :(
