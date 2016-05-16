@@ -1,0 +1,4 @@
+4x4 range blocks
+4x4 non-overlapping domain blocks
+8 isometries
+Decoded at 32 times the original size
