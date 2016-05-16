@@ -43,59 +43,63 @@ V_MEAN = V_MEAN / length(D);
 % determine bits for each parameter
 dr = Rmeans(2) - Rmeans(1);
 
-b_total = 8;
-b_r = floor((b_total + log2(dr/sqrt(V_MEAN)))/2);
+b_total = 10;
+for bits=1:b_total-1
 
-b_r = 1;
+    b_r = floor((b_total + log2(dr/sqrt(V_MEAN)))/2);
 
-b_s = b_total - b_r;
-bits = [b_r, b_s]
+    b_r = bits;
 
-s_levels = 2^b_s;
-s_q_step = 1/s_levels;
+    b_s = b_total - b_r;
+    bits = [b_r, b_s]
 
-r_levels = 2^b_r;
-r_q_step = 1/r_levels;
+    s_levels = 2^b_s;
+    s_q_step = 1/s_levels;
 
-for i=1:length(CODED)
-    s = CODED(i).s;
-    r = CODED(i).r;
-    CODED(i).s_q = s_q_step * (1+floor(s/s_q_step - s_q_step*1e-16));
-    CODED(i).r_q = r_q_step/2 + r_q_step*floor((r - Rmeans(1))/dr/r_q_step - 0.00001);
-    CODED(i).r_q = (1-CODED(i).r_q) * Rmeans(1) + CODED(i).r_q * Rmeans(2);
-end
-
-% RECONSTRUCTION
-
-F = 1;
-%H = double(load_raw('images/camman.lum', 256, 256))/255;
-H = rand(256, 256);
-H = imresize(H, F);
-IT = 8;
-
-ITS = [struct('img', H)];
-for iter=1:IT
-    %fprintf('Iteration #%d\n', iter);
-    Hdec = imresize(H, 0.5);
-    Ddec = get_blocks(Hdec, B*F, V*F);
-    Hblock = get_blocks(H, B*F, B*F);
-    Hnext = get_blocks(H, B*F, B*F);
+    r_levels = 2^b_r;
+    r_q_step = 1/r_levels;
 
     for i=1:length(CODED)
-        block = Ddec(CODED(i).index);
-        block.block = apply_trans(block.block, CODED(i).trans);
-        Hnext(i).block = CODED(i).s_q * (block.block - block.mean) + CODED(i).r_q;
+        s = CODED(i).s;
+        r = CODED(i).r;
+        CODED(i).s_q = s_q_step * (1+floor(s/s_q_step - s_q_step*1e-16));
+        CODED(i).r_q = r_q_step/2 + r_q_step*floor((r - Rmeans(1))/dr/r_q_step - 0.00001);
+        CODED(i).r_q = (1-CODED(i).r_q) * Rmeans(1) + CODED(i).r_q * Rmeans(2);
     end
 
-    H = join_blocks(Hnext, 256, 256);
-    ITS = [ITS, struct('img', H)];
+    % RECONSTRUCTION
+
+    F = 1;
+    %H = double(load_raw('images/camman.lum', 256, 256))/255;
+    H = rand(256, 256);
+    H = imresize(H, F);
+    IT = 8;
+
+    ITS = [struct('img', H)];
+    for iter=1:IT
+        %fprintf('Iteration #%d\n', iter);
+        Hdec = imresize(H, 0.5);
+        Ddec = get_blocks(Hdec, B*F, V*F);
+        Hblock = get_blocks(H, B*F, B*F);
+        Hnext = get_blocks(H, B*F, B*F);
+
+        for i=1:length(CODED)
+            block = Ddec(CODED(i).index);
+            block.block = apply_trans(block.block, CODED(i).trans);
+            Hnext(i).block = CODED(i).s_q * (block.block - block.mean) + CODED(i).r_q;
+        end
+
+        H = join_blocks(Hnext, 256, 256);
+        ITS = [ITS, struct('img', H)];
+    end
+
+    DEC = ITS(end).img;
+    imwrite(DEC, 'tmp.png');
+    tmp = imread('tmp.png');
+    psnr = compute_psnr(tmp, Iraw);
+    list_psnr = [list_psnr, psnr];
 end
-
-DEC = ITS(end).img;
-imwrite(DEC, 'tmp.png');
-tmp = imread('tmp.png');
-psnr = compute_psnr(tmp, Iraw)
-
+    
 %% PLOT
 
 for i=1:length(ITS)-1
