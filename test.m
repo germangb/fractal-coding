@@ -1,6 +1,5 @@
 %%
 I = double(load_raw('images/mandril.lum', 128, 128))/255;
-H = rand(128*8, 128*8);
 
 %% REPLACE RANGE WITH BEST MATCHING DOMAIN
 
@@ -32,9 +31,10 @@ end
 
 %% RECONSTRUCTION
 
-F = 8;
+F = 32;
+H = rand(128*F, 128*F);
 IT = 8;
-Hr = rand(128*8, 128*8);
+Hr = rand(128*F, 128*F);
 ITS = [struct('img', Hr)];
 for iter=1:IT
     fprintf('Iteration #%d\n', iter);
